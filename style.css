@@ -1,0 +1,224 @@
+:root {
+  --bg: #0b0b10;
+  --fg: #f4f2ee;
+  --dim: rgba(244, 242, 238, 0.68);
+  --accent: #ff5a3c;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  overflow: hidden;
+}
+
+#deck { position: fixed; inset: 0; }
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8vh 9vw 14vh;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease;
+  background: var(--bg);
+  z-index: 1;
+}
+
+.slide.active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 2;
+}
+
+.slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-image: var(--img);
+  filter: saturate(0.92);
+  transform: scale(1.04);
+  z-index: -2;
+}
+
+.slide:not(.statement)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(8, 8, 12, 0.88) 0%,
+    rgba(8, 8, 12, 0.55) 42%,
+    rgba(8, 8, 12, 0.25) 100%
+  );
+  z-index: -1;
+}
+
+/* image slides get a slow slow push-in while on screen */
+.slide.active::before { animation: drift 20.5s linear forwards; }
+@keyframes drift {
+  from { transform: scale(1.04); }
+  to   { transform: scale(1.005); }
+}
+
+.kicker {
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 1.4rem;
+}
+
+h1, h2 {
+  font-size: clamp(2.4rem, 5.6vw, 5.2rem);
+  line-height: 1.04;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  max-width: 18ch;
+}
+
+.giant {
+  font-size: clamp(6rem, 17vw, 16rem);
+  line-height: 0.95;
+  color: var(--accent);
+  letter-spacing: -0.03em;
+}
+
+.support {
+  margin-top: 1.6rem;
+  font-size: clamp(1.05rem, 1.6vw, 1.5rem);
+  line-height: 1.55;
+  color: var(--dim);
+  max-width: 52ch;
+}
+
+.support code,
+h2 code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.88em;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.1em 0.4em;
+  border-radius: 6px;
+}
+
+/* statement slides: flat color, centered type */
+.slide.statement {
+  justify-content: center;
+  padding-bottom: 10vh;
+}
+
+.slide.statement.accent {
+  background:
+    radial-gradient(120% 120% at 85% 10%, rgba(255, 90, 60, 0.22) 0%, rgba(11, 11, 16, 0) 55%),
+    var(--bg);
+}
+
+/* timer: 20 segments, one per slide */
+#timer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  display: flex;
+  gap: 3px;
+  padding: 6px 8px;
+  z-index: 20;
+}
+
+.seg {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.seg.done { background: rgba(255, 255, 255, 0.45); }
+
+.seg .fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* HUD */
+#hud {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0.9rem 2.2rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  z-index: 20;
+  font-variant-numeric: tabular-nums;
+}
+
+#hud button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--fg);
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#hud button:hover { background: rgba(255, 255, 255, 0.22); }
+
+#total { margin-left: auto; }
+#counter { min-width: 4.5ch; text-align: center; }
+
+#paused-note {
+  position: fixed;
+  top: 1.1rem;
+  right: 1.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 90, 60, 0.9);
+  color: #fff;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  z-index: 30;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+body.paused #paused-note { opacity: 1; }
+
+/* click zones */
+#zones {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  z-index: 10;
+}
+#zones .zone { flex: 1; }
+
+@media (max-width: 640px) {
+  .slide { padding: 8vh 7vw 12vh; }
+  #hud { padding: 0.7rem 1rem; gap: 0.7rem; }
+}
