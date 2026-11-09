@@ -1,13 +1,18 @@
 const SLIDE_MS = 20000;
+const RING_C = 2 * Math.PI * 26; // countdown ring circumference
+
 const deck = document.getElementById("deck");
 const slides = Array.from(deck.querySelectorAll(".slide"));
 const timerEl = document.getElementById("timer");
 const counterEl = document.getElementById("counter");
-const pausedNote = document.getElementById("paused-note");
+const countdownEl = document.getElementById("countdown");
+const secondsEl = document.getElementById("seconds");
+const ringEl = countdownEl.querySelector(".ring");
 
 let index = 0;
+let started = false;   // play button pressed
 let paused = false;
-let elapsed = 0;        // ms consumed on the current slide
+let elapsed = 0;       // ms consumed on the current slide
 let lastTick = null;
 let rafId = null;
 
@@ -30,30 +35,41 @@ function preload(i) {
   }
 }
 
+function renderCountdown() {
+  const remaining = Math.max(0, SLIDE_MS - elapsed);
+  const secs = Math.ceil(remaining / 1000);
+  secondsEl.textContent = secs;
+  ringEl.style.strokeDashoffset = `${RING_C * (elapsed / SLIDE_MS)}`;
+  countdownEl.classList.toggle("hot", secs <= 5 && remaining > 0);
+}
+
 function show(i, resetTimer) {
   index = Math.max(0, Math.min(slides.length - 1, i));
   slides.forEach((s, n) => s.classList.toggle("active", n === index));
   counterEl.textContent = `${index + 1} / ${slides.length}`;
-  segments.forEach((seg, n) => {
-    seg.classList.toggle("done", n < index);
-    const fill = seg.firstElementChild;
-    if (n === index && resetTimer) fill.style.width = "0%";
-  });
+  segments.forEach((seg, n) => seg.classList.toggle("done", n < index));
   preload(index + 1);
   preload(index + 2);
-  if (resetTimer) elapsed = 0;
+  if (resetTimer) {
+    elapsed = 0;
+    // un-started state: fresh 20 on the countdown until play is pressed
+    if (!started) renderCountdown();
+  }
+  renderCountdown();
 }
 
 function tick(now) {
-  if (lastTick !== null && !paused) {
+  if (lastTick !== null && started && !paused) {
     elapsed += now - lastTick;
     const p = Math.min(1, elapsed / SLIDE_MS);
     segments[index].firstElementChild.style.width = `${p * 100}%`;
+    renderCountdown();
     if (elapsed >= SLIDE_MS) {
       if (index < slides.length - 1) {
+        elapsed = 0;
         show(index + 1, true);
       } else {
-        // deck finished: hold on the last slide, bar full
+        // deck finished: hold on the last slide, bar and ring full
         segments[index].firstElementChild.style.width = "100%";
       }
     }
@@ -62,13 +78,31 @@ function tick(now) {
   rafId = requestAnimationFrame(tick);
 }
 
+function startDeck() {
+  started = true;
+  document.body.classList.add("playing");
+  document.getElementById("play").style.display = "none";
+  // click zones only exist while playing, so the play button is reachable on the title slide
+  document.body.appendChild(zones);
+}
+
 function togglePause() {
   paused = !paused;
   document.body.classList.toggle("paused", paused);
   document.getElementById("pause").textContent = paused ? "▶" : "❚❚";
 }
 
-document.addEventListener("keydown", (e) => {
+document.getElementById("play").addEventListener("click", (e) => {
+  e.stopPropagation();
+  startDeck();
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !started) {
+    e.preventDefault();
+    startDeck();
+    return;
+  }
   if (e.key === "ArrowRight" || e.key === " ") {
     e.preventDefault();
     show(index + 1, true);
@@ -76,7 +110,7 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     show(index - 1, true);
   } else if (e.key.toLowerCase() === "p") {
-    togglePause();
+    if (started) togglePause();
   } else if (e.key.toLowerCase() === "f") {
     document.fullscreenElement
       ? document.exitFullscreen()
@@ -96,7 +130,7 @@ zones.addEventListener("click", (e) => {
     show(index + dir, true);
   }
 });
-document.body.appendChild(zones);
+// appended to the DOM only in startDeck()
 
 document.getElementById("next").addEventListener("click", () => show(index + 1, true));
 document.getElementById("prev").addEventListener("click", () => show(index - 1, true));
